@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const DEFAULT_SETTINGS = {
   siteName: "Real Estate",
@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS = {
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("site_settings")
       .select("*")
       .eq("id", 1)
@@ -30,7 +30,7 @@ export async function GET() {
       return NextResponse.json(
         {
           success: false,
-          message: "Failed to load settings.",
+          message: error.message,
         },
         { status: 500 }
       );
@@ -55,7 +55,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong.",
+        message: "Something went wrong while loading settings.",
       },
       { status: 500 }
     );
@@ -96,7 +96,9 @@ export async function PUT(request: Request) {
       ).trim(),
 
       maintenance_mode:
-        Boolean(body.maintenanceMode),
+        body.maintenanceMode !== undefined
+          ? Boolean(body.maintenanceMode)
+          : DEFAULT_SETTINGS.maintenanceMode,
 
       contact_form:
         body.contactForm !== undefined
@@ -106,7 +108,7 @@ export async function PUT(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("site_settings")
       .upsert(
         {
@@ -121,19 +123,19 @@ export async function PUT(request: Request) {
       .single();
 
     if (error) {
-  console.error("Supabase settings PUT error:", error);
+      console.error("Supabase settings PUT error:", error);
 
-  return NextResponse.json(
-    {
-      success: false,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code,
-    },
-    { status: 500 }
-  );
-}
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -168,7 +170,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("site_settings")
       .upsert(
         {
@@ -201,7 +203,7 @@ export async function DELETE() {
       return NextResponse.json(
         {
           success: false,
-          message: "Failed to reset settings.",
+          message: error.message,
         },
         { status: 500 }
       );
